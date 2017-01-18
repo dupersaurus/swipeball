@@ -18,6 +18,7 @@ public class WanderBehavior : AIBehavior {
         // Let's ignore curve for now.
         Ball.BallPath[] path = ball.ProjectPath();
         Vector2 playerBallDiff;
+        Vector2 ballOrigin;
         Vector2 ballDirection;
         Vector2 intercept;
         float playerTime;
@@ -31,9 +32,15 @@ public class WanderBehavior : AIBehavior {
         }
 
         for (int i = 1; i < path.Length; i++) {
-            ballDirection = path[i].position - path[i - 1].position;
+            ballOrigin = path[i - 1].position;
+            ballDirection = path[i].position - ballOrigin;
             playerBallDiff = (Vector2)gameObject.transform.position - path[i - 1].position;
             intercept = (Vector2)Vector3.Project(playerBallDiff, ballDirection) + path[i - 1].position;
+
+            // Clamp the intercept to the end of the path segment
+            if ((intercept - ballOrigin).sqrMagnitude > ballDirection.sqrMagnitude) {
+                intercept = path[i].position;
+            }
 
             playerTime = GetComponent<Character>().CalculateRunTime(intercept);
             ballTime = playerBallDiff.sqrMagnitude / path[i - 1].velocity.sqrMagnitude;

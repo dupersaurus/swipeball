@@ -7,7 +7,7 @@ public class Ball : MonoBehaviour, ITicker {
     private const float GRAVITY = -1;
     private const float BOUNCE_FACTOR = 0.5f;
 
-    public struct BallPath {
+    public class BallPath {
         /// <summary>The time it will take the ball to get here, in seconds</summary>
         public float time;
 
@@ -119,6 +119,12 @@ public class Ball : MonoBehaviour, ITicker {
             path.Add(now);
 
             path.AddRange(ProjectPathSegment(lateralVelocity, ballVelocity.z, now.position, now.height));
+
+            // All of the times are local to the segment, make them sequential
+            for (int i = 1; i < path.Count; i++) {
+                path[i].time = path[i].time + path[i - 1].time;
+            }
+
             savedPath = path.ToArray();
         }
 
