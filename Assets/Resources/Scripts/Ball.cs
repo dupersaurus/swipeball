@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class Ball : MonoBehaviour, ITicker {
 
-    private const float GRAVITY = -1;
+    private const float GRAVITY = -1f;
     private const float BOUNCE_FACTOR = 0.5f;
 
     public class BallPath {
@@ -23,6 +23,12 @@ public class Ball : MonoBehaviour, ITicker {
 
     [SerializeField]
     private GameObject ballSprite;
+
+    [SerializeField]
+    private float referenceThrowDistance = 20.0f;
+
+    [SerializeField]
+    private float maxThrowArc = 2;
 
     private GameState gameState;
 
@@ -91,6 +97,8 @@ public class Ball : MonoBehaviour, ITicker {
     }
 
     public void ThrowBall(GameState game, Vector2 position, Vector2 direction, float curve, float speed, float distance) {
+        Debug.Log("throw distance >> " + distance);
+
         gameState = game;
 
         if (speed < 2) {
@@ -102,7 +110,7 @@ public class Ball : MonoBehaviour, ITicker {
         gameObject.transform.position = position;
 
         ballVelocity = direction * speed;
-        ballVelocity.z = (distance / speed) / 2;
+        ballVelocity.z = (1 - Mathf.Clamp01(distance / referenceThrowDistance)) * maxThrowArc; //(distance / speed) / 2;
         curveRate = curve;
     }
 

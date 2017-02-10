@@ -24,7 +24,7 @@ public class GameState : MonoBehaviour {
     private AI possessor = null;
 
     private float referenceSwipeSpeed = 20;
-    private float referenceBallSpeed = 6;
+    private float referenceBallSpeed = 12;
 
     private Vector2 throwPos;
 
@@ -81,7 +81,7 @@ public class GameState : MonoBehaviour {
             return;
         }
 
-        float ballSpeed = speedCurve.Evaluate(speed / referenceSwipeSpeed) * referenceBallSpeed;
+        float ballSpeed = referenceBallSpeed * speed; //speedCurve.Evaluate(speed / referenceSwipeSpeed) * referenceBallSpeed;
 
         GameObject go = Instantiate<GameObject>(ballPrefab);
         liveBall = go.GetComponent<Ball>();

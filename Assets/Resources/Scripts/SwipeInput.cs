@@ -20,6 +20,10 @@ public class SwipeInput : MonoBehaviour {
 	[SerializeField]
 	private float _powerScale = 2.0f;
 
+    /// <summary>Time to hold for a full charge</summary>
+    [SerializeField]
+    private float _fullChargeTime = 5.0f;
+
 	public event TapStart OnInputStart;
 	public event TapSelect OnSelect;
 	public event ThrowResponse OnThrow;
@@ -89,7 +93,8 @@ public class SwipeInput : MonoBehaviour {
                 angle *= -1;
             }
 
-            float velocity = _totalMotion / _swipeTime;
+            float velocity = _swipeTime / _fullChargeTime; //_totalMotion / _swipeTime;
+            Debug.Log("Charge time >> " + _swipeTime + " (" + velocity + ")");
             OnThrow(_launchVector, angle, velocity, _totalMotion);
 		}
 	}

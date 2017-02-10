@@ -5,9 +5,7 @@ using System.Collections;
 /// Chase down a thrown ball
 /// </summary>
 public class ChaseBehavior : AIBehavior {
-
-    bool hasStarted = false;
-
+    
     Vector3 ballIntercept;
     Ball targetBall = null;
 
@@ -19,6 +17,7 @@ public class ChaseBehavior : AIBehavior {
     public void Initialize(Ball ball, AI thrower, Vector3 intercept) {
         targetBall = ball;
         ballIntercept = intercept;
+        Debug.Log("Run to >> " + intercept);
 
         ChaseBall();
     }

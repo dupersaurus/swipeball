@@ -38,6 +38,8 @@ public class WanderBehavior : AIBehavior {
             intercept = (Vector2)Vector3.Project(playerBallDiff, ballDirection) + path[i - 1].position;
 
             // Clamp the intercept to the end of the path segment
+            Debug.Log("intercept " + intercept + " >> end " + path[i].position);
+            Debug.Log("length >> " + (intercept - ballOrigin).sqrMagnitude + ", " + ballDirection.sqrMagnitude);
             if ((intercept - ballOrigin).sqrMagnitude > ballDirection.sqrMagnitude) {
                 intercept = path[i].position;
             }
