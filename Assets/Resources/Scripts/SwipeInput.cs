@@ -94,7 +94,6 @@ public class SwipeInput : MonoBehaviour {
             }
 
             float velocity = _swipeTime / _fullChargeTime; //_totalMotion / _swipeTime;
-            Debug.Log("Charge time >> " + _swipeTime + " (" + velocity + ")");
             OnThrow(_launchVector, angle, velocity, _totalMotion);
 		}
 	}

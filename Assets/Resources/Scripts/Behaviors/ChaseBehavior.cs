@@ -17,7 +17,6 @@ public class ChaseBehavior : AIBehavior {
     public void Initialize(Ball ball, AI thrower, Vector3 intercept) {
         targetBall = ball;
         ballIntercept = intercept;
-        Debug.Log("Run to >> " + intercept);
 
         ChaseBall();
     }

@@ -40,6 +40,8 @@ public class Ball : MonoBehaviour, ITicker {
     private bool isDead = false;
     private BallPath[] savedPath = null;
 
+    private float launchTime = 0;
+
     /// <summary>
     /// Current velocity of the ball along the horizontal plane
     /// </summary>
@@ -69,11 +71,18 @@ public class Ball : MonoBehaviour, ITicker {
 	
     // Update is called once per frame
     public void Tick(float delta) {
+        if (savedPath != null) {
+            Vector3 lastPos = savedPath[0].position;
+
+            for (int i = 1; i < savedPath.Length; i++) {
+                Debug.DrawLine(lastPos, savedPath[i].position, Color.yellow, 1, false);
+                lastPos = savedPath[i].position;
+            }
+        }
+
         if (isDead || ballVelocity == Vector3.zero) {
             return;
         }
-
-        savedPath = null;
 
         Vector3 pos = gameObject.transform.position;
         pos += ballVelocity * delta;
@@ -87,18 +96,17 @@ public class Ball : MonoBehaviour, ITicker {
             pos.y = 0;
             isDead = true;
             gameState.BallDied();
+            Debug.Log("hangtime >> " + (Time.time - launchTime));
         }
 
         ballSprite.gameObject.transform.localPosition = pos;
 
-        ballVelocity.z += GRAVITY * delta;
+        ballVelocity.z += (GRAVITY * delta);
 
-        ballVelocity = Quaternion.AngleAxis(curveRate * delta, Vector3.forward) * ballVelocity;
+        //ballVelocity = Quaternion.AngleAxis(curveRate * delta, Vector3.forward) * ballVelocity;
     }
 
     public void ThrowBall(GameState game, Vector2 position, Vector2 direction, float curve, float speed, float distance) {
-        Debug.Log("throw distance >> " + distance);
-
         gameState = game;
 
         if (speed < 2) {
@@ -109,9 +117,15 @@ public class Ball : MonoBehaviour, ITicker {
 
         gameObject.transform.position = position;
 
+        float launchAngle = Mathf.Clamp01(distance / referenceThrowDistance); // * 45;
+        Debug.Log("launch angle >> " + launchAngle);
+
         ballVelocity = direction * speed;
-        ballVelocity.z = (1 - Mathf.Clamp01(distance / referenceThrowDistance)) * maxThrowArc; //(distance / speed) / 2;
+        ballVelocity.z = launchAngle * 2; //Quaternion.AngleAxis(launchAngle, Vector3.left) * direction;
+        //ballVelocity.z = (1 - Mathf.Clamp01(distance / referenceThrowDistance)) * maxThrowArc; //(distance / speed) / 2;
         curveRate = curve;
+
+        launchTime = Time.time;
     }
 
     public BallPath[] ProjectPath() {
@@ -122,7 +136,7 @@ public class Ball : MonoBehaviour, ITicker {
             BallPath now = new BallPath();
             now.time = 0;
             now.position = gameObject.transform.position;
-            now.height = Mathf.Abs(ballSprite.transform.position.y);
+            now.height = Mathf.Abs(ballSprite.transform.localPosition.y);
             now.velocity = ballVelocity;
             path.Add(now);
 
@@ -140,12 +154,15 @@ public class Ball : MonoBehaviour, ITicker {
     }
 
     private List<BallPath> ProjectPathSegment(Vector2 lateralVelocity, float verticalVelocity, Vector3 position, float height) {
+        
         // t = (sqrt(2ad + v^2) - v)/a
         // d = vt + 0.5at^2
-        float fallTime = (Mathf.Sqrt(2 * -GRAVITY * height + verticalVelocity * verticalVelocity) - verticalVelocity) / -GRAVITY;
+        float fallTime = ProjectFallTime(height, verticalVelocity); //(Mathf.Sqrt(2 * -GRAVITY * height + verticalVelocity * verticalVelocity) - verticalVelocity) / -GRAVITY;
         float distance = lateralVelocity.magnitude * fallTime;
         BallPath path = new BallPath();
         List<BallPath> paths = new List<BallPath>();
+
+        //Debug.Log("ProjectPathSegment >> height: " + height + " velocity: " + verticalVelocity + " falltime: " + fallTime);
 
         path.position = (Vector2)position + lateralVelocity.normalized * distance;
         path.time = fallTime;
@@ -169,6 +186,23 @@ public class Ball : MonoBehaviour, ITicker {
         }
 
         return paths;
+    }
+
+    private float ProjectFallTime(float height, float speed) {
+        //return (Mathf.Sqrt(2 * -GRAVITY * height + speed * speed) - speed) / -GRAVITY;
+
+        float stepSpeed = speed;
+        float stepHeight = height;
+        float totalTime = 0;
+        float step = 0.1f;
+
+        while (stepHeight >= 0) {
+            stepHeight += (stepSpeed * step);
+            stepSpeed += (GRAVITY * step);
+            totalTime += step; 
+        }
+
+        return totalTime;
     }
         
     void OnCollisionEnter2D(Collision2D coll) {
