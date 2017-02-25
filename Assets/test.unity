@@ -322,8 +322,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _motionThreshold: 0.5
   _curveDeadzone: 5
-  _powerScale: 20
-  _fullChargeTime: 5
+  _powerScale: 1
+  _fullChargeTime: 2
 --- !u!4 &957019791
 Transform:
   m_ObjectHideFlags: 0
@@ -409,7 +409,7 @@ Prefab:
     m_Modifications:
     - target: {fileID: 4308912966487870, guid: f398cf5671d2d447199bd0c750db4d58, type: 2}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -5.76
       objectReference: {fileID: 0}
     - target: {fileID: 4308912966487870, guid: f398cf5671d2d447199bd0c750db4d58, type: 2}
       propertyPath: m_LocalPosition.y
@@ -729,6 +729,11 @@ Prefab:
     - target: {fileID: 1651686657171896, guid: f398cf5671d2d447199bd0c750db4d58, type: 2}
       propertyPath: m_Name
       value: Red Team
+      objectReference: {fileID: 0}
+    - target: {fileID: 114398168670069256, guid: f398cf5671d2d447199bd0c750db4d58,
+        type: 2}
+      propertyPath: teamId
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: f398cf5671d2d447199bd0c750db4d58, type: 2}

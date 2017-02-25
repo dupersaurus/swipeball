@@ -93,7 +93,7 @@ public class SwipeInput : MonoBehaviour {
                 angle *= -1;
             }
 
-            float velocity = _swipeTime / _fullChargeTime; //_totalMotion / _swipeTime;
+            float velocity = 1; //_swipeTime / _fullChargeTime; //_totalMotion / _swipeTime;
             OnThrow(_launchVector, angle, velocity, _totalMotion);
 		}
 	}

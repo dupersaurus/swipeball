@@ -177,7 +177,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ballSprite: {fileID: 1410417479626830}
-  referenceThrowDistance: 20
+  referenceThrowDistance: 10
   maxThrowArc: 2
 --- !u!212 &212524022702868964
 SpriteRenderer:

@@ -4,7 +4,17 @@ using System.Collections.Generic;
 
 public class Ball : MonoBehaviour, ITicker {
 
-    private const float GRAVITY = -1f;
+    struct HeightStep {
+        public float time;
+        public float height;
+
+        public HeightStep(float stepTime, float stepHeight) {
+            time = stepTime;
+            height = stepHeight;
+        }
+    }
+
+    private const float GRAVITY = -2f;
     private const float BOUNCE_FACTOR = 0.5f;
 
     public class BallPath {
@@ -42,6 +52,9 @@ public class Ball : MonoBehaviour, ITicker {
 
     private float launchTime = 0;
 
+    private List<HeightStep> debugHeights;
+    private List<HeightStep> flightHeights;
+
     /// <summary>
     /// Current velocity of the ball along the horizontal plane
     /// </summary>
@@ -71,14 +84,48 @@ public class Ball : MonoBehaviour, ITicker {
 	
     // Update is called once per frame
     public void Tick(float delta) {
+        
+        // Debug
         if (savedPath != null) {
             Vector3 lastPos = savedPath[0].position;
+            Vector3 lastHeight = lastPos;
+            lastHeight.y += savedPath[0].height;
 
             for (int i = 1; i < savedPath.Length; i++) {
+                Vector3 height = savedPath[i].position;
+                height.y += savedPath[i].height;
+
                 Debug.DrawLine(lastPos, savedPath[i].position, Color.yellow, 1, false);
+                Debug.DrawLine(lastHeight, height, Color.magenta, 1, false);
+
                 lastPos = savedPath[i].position;
+                lastHeight = height;
+            }
+
+            Vector3 dpos = new Vector3();
+            lastPos = new Vector3(-1, debugHeights[0].height);
+            for (var i = 1; i < debugHeights.Count; i++) {
+                dpos = lastPos;
+                dpos.x = debugHeights[i].time;
+                dpos.y = debugHeights[i].height;
+                Debug.DrawLine(lastPos, dpos, Color.green, 1);
+                lastPos = dpos;
+            }
+            
+            if (flightHeights.Count > 0) {
+                float startTime = flightHeights[0].time;
+                dpos = new Vector3();
+                lastPos = new Vector3(-1, flightHeights[0].height);
+                for (var i = 1; i < flightHeights.Count; i++) {
+                    dpos = lastPos;
+                    dpos.x = flightHeights[i].time - startTime;
+                    dpos.y = flightHeights[i].height;
+                    Debug.DrawLine(lastPos, dpos, Color.blue, 1);
+                    lastPos = dpos;
+                }
             }
         }
+        // Debug
 
         if (isDead || ballVelocity == Vector3.zero) {
             return;
@@ -89,8 +136,16 @@ public class Ball : MonoBehaviour, ITicker {
         pos.z = 0;
         gameObject.transform.position = pos;
 
+        float vertHeight = ballSprite.transform.localPosition.y;
+        float vertVelocity = ballVelocity.z;
+        CalculateHeightStep(ref vertHeight, ref vertVelocity, delta);
+
         pos = ballSprite.transform.localPosition;
-        pos.y += ballVelocity.z * delta;
+        flightHeights.Add(new HeightStep(Time.time, pos.y));
+
+        //pos.y += ballVelocity.z * delta;
+        pos.y = vertHeight;
+        ballVelocity.z = vertVelocity;
 
         if (pos.y <= 0) {
             pos.y = 0;
@@ -101,9 +156,19 @@ public class Ball : MonoBehaviour, ITicker {
 
         ballSprite.gameObject.transform.localPosition = pos;
 
+        /*bool climbing = ballVelocity.z >= 0;
         ballVelocity.z += (GRAVITY * delta);
 
+        if (climbing && ballVelocity.z <= 0) {
+            Debug.Log("tick >> highest: " + ballSprite.gameObject.transform.localPosition.y);
+        }*/
+
         //ballVelocity = Quaternion.AngleAxis(curveRate * delta, Vector3.forward) * ballVelocity;
+    }
+
+    private void CalculateHeightStep(ref float height, ref float velocity, float timeStep) {
+        height = height + velocity * timeStep;
+        velocity = velocity + GRAVITY * timeStep;
     }
 
     public void ThrowBall(GameState game, Vector2 position, Vector2 direction, float curve, float speed, float distance) {
@@ -117,15 +182,17 @@ public class Ball : MonoBehaviour, ITicker {
 
         gameObject.transform.position = position;
 
-        float launchAngle = Mathf.Clamp01(distance / referenceThrowDistance); // * 45;
-        Debug.Log("launch angle >> " + launchAngle);
-
+        float launchAngle = 1; //Mathf.Clamp01(distance / referenceThrowDistance); // * 45;
+        
         ballVelocity = direction * speed;
         ballVelocity.z = launchAngle * 2; //Quaternion.AngleAxis(launchAngle, Vector3.left) * direction;
         //ballVelocity.z = (1 - Mathf.Clamp01(distance / referenceThrowDistance)) * maxThrowArc; //(distance / speed) / 2;
         curveRate = curve;
 
+        Debug.Log("ThrowBall >> height: " + ballSprite.transform.localPosition.y + ", velocity: " + ballVelocity.z);
+        
         launchTime = Time.time;
+        ProjectPath();
     }
 
     public BallPath[] ProjectPath() {
@@ -133,12 +200,21 @@ public class Ball : MonoBehaviour, ITicker {
             List<BallPath> path = new List<BallPath>();
             Vector2 lateralVelocity = ballVelocity;
 
+            if (debugHeights != null) {
+                debugHeights.Clear();
+            } else {
+                debugHeights = new List<HeightStep>();
+                flightHeights = new List<HeightStep>();
+            }
+
             BallPath now = new BallPath();
             now.time = 0;
             now.position = gameObject.transform.position;
             now.height = Mathf.Abs(ballSprite.transform.localPosition.y);
             now.velocity = ballVelocity;
             path.Add(now);
+
+            Debug.Log("ProjectPath >> height: " + now.height + ", velocity: " + ballVelocity.z);
 
             path.AddRange(ProjectPathSegment(lateralVelocity, ballVelocity.z, now.position, now.height));
 
@@ -176,10 +252,11 @@ public class Ball : MonoBehaviour, ITicker {
             path.velocity = Vector3.zero;
         } else {
             path.position = ray.point;
-            path.time = ray.distance / lateralVelocity.sqrMagnitude;
-            path.height = verticalVelocity * path.time + 0.5f * GRAVITY * (path.time * path.time) + height;
+            path.time = ray.distance / lateralVelocity.magnitude;
+            //path.height = verticalVelocity * path.time + 0.5f * GRAVITY * (path.time * path.time) + height;
+            path.height = ProjectHeightAtTime(height, verticalVelocity, path.time);
             path.velocity = Vector2.Reflect(lateralVelocity, ray.normal) * BOUNCE_FACTOR;
-            path.velocity.z = verticalVelocity * (verticalVelocity > 0 ? BOUNCE_FACTOR : 1);
+            path.velocity.z = ReboundVerticalVelocity(ProjectVerticalVelocityAtTime(verticalVelocity, path.time)); //verticalVelocity * (verticalVelocity > 0 ? BOUNCE_FACTOR : 1);
 
             paths.Add(path);
             paths.AddRange(ProjectPathSegment(path.velocity, path.velocity.z, ray.point, path.height));
@@ -194,15 +271,50 @@ public class Ball : MonoBehaviour, ITicker {
         float stepSpeed = speed;
         float stepHeight = height;
         float totalTime = 0;
-        float step = 0.1f;
+        float step = 0.01f;
+        bool highest = false;
 
         while (stepHeight >= 0) {
-            stepHeight += (stepSpeed * step);
-            stepSpeed += (GRAVITY * step);
+            debugHeights.Add(new HeightStep(totalTime, stepHeight));
+            
+            CalculateHeightStep(ref stepHeight, ref stepSpeed, step);
             totalTime += step; 
+            
+            if (!highest && stepSpeed < 0) {
+                highest = true;
+                Debug.Log("Project >> highest: " + stepHeight);
+            }
         }
 
         return totalTime;
+    }
+
+    private float ProjectHeightAtTime(float height, float speed, float time) {
+        float stepSpeed = speed;
+        float stepHeight = height;
+        float totalTime = 0;
+        float step = 0.01f;
+
+        while (totalTime < time) {
+            CalculateHeightStep(ref stepHeight, ref stepSpeed, step);
+            totalTime += step;
+        }
+
+        return stepHeight;
+    }
+
+    private float ProjectVerticalVelocityAtTime(float speed, float time) {
+        float stepSpeed = speed;
+        float stepHeight = 0;
+        float totalTime = 0;
+        float step = 0.01f;
+
+        while (totalTime < time) {
+            CalculateHeightStep(ref stepHeight, ref stepSpeed, step);
+            totalTime += step;
+        }
+
+        return stepSpeed;
     }
         
     void OnCollisionEnter2D(Collision2D coll) {
@@ -211,13 +323,23 @@ public class Ball : MonoBehaviour, ITicker {
 
         ballVelocity.x *= BOUNCE_FACTOR;
         ballVelocity.y *= BOUNCE_FACTOR;
-
-        if (ballVelocity.z > 0) {
-            ballVelocity.z *= BOUNCE_FACTOR;
-        }
+        ballVelocity.z = ReboundVerticalVelocity(ballVelocity.z);
 
         //transform.position = impact.point;
         curveRate = 0;
+    }
+
+    /// <summary>
+    /// Determine the new vertical speed of the ball after a rebound
+    /// </summary>
+    /// <param name="verticalVelocity">The vertical speed before the rebound</param>
+    /// <returns>The new vertical speed</returns>
+    private float ReboundVerticalVelocity(float verticalVelocity) {
+        if (verticalVelocity > 0) {
+            verticalVelocity *= BOUNCE_FACTOR;
+        }
+
+        return verticalVelocity;
     }
 }
 

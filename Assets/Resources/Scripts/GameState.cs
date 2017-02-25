@@ -24,7 +24,7 @@ public class GameState : MonoBehaviour {
     private AI possessor = null;
 
     private float referenceSwipeSpeed = 20;
-    private float referenceBallSpeed = 12;
+    private float referenceBallSpeed = 5;
 
     private Vector2 throwPos;
 
